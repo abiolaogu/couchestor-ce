@@ -1,0 +1,162 @@
+# Example 1: Standard 4+2 erasure coding
+---
+apiVersion: storage.billyronks.io/v1
+kind: ErasureCodingPolicy
+metadata:
+  name: standard-ec
+spec:
+  # 4 data shards + 2 parity shards = 50% overhead
+  # Can tolerate 2 simultaneous shard failures
+  dataShards: 4
+  parityShards: 2
+
+  # 1MB stripe size (good balance)
+  stripeSizeBytes: 1048576
+
+  # Reed-Solomon algorithm (most common)
+  algorithm: ReedSolomon
+
+  # Journal configuration for write buffering
+  journalConfig:
+    journalSizeBytes: 10737418240  # 10GB
+    replicationFactor: 3
+    destageThresholdPercent: 80
+    destageInterval: "30s"
+
+  # Health requirements
+  minHealthyShards: 4  # Must have at least k shards
+
+  # Scrubbing disabled by default
+  scrubbingEnabled: false
+  scrubInterval: "7d"
+
+---
+# Example 2: High efficiency 6+2 erasure coding
+apiVersion: storage.billyronks.io/v1
+kind: ErasureCodingPolicy
+metadata:
+  name: high-efficiency-ec
+spec:
+  # 6 data shards + 2 parity shards = 33% overhead
+  # Better efficiency but requires more nodes
+  dataShards: 6
+  parityShards: 2
+
+  # Larger stripe size for sequential workloads
+  stripeSizeBytes: 2097152  # 2MB
+
+  # Reed-Solomon algorithm
+  algorithm: ReedSolomon
+
+  # Larger journal for better write buffering
+  journalConfig:
+    journalSizeBytes: 21474836480  # 20GB
+    replicationFactor: 3
+    destageThresholdPercent: 75
+    destageInterval: "60s"
+
+  # Require all data shards healthy
+  minHealthyShards: 6
+
+  # Enable scrubbing for long-term data integrity
+  scrubbingEnabled: true
+  scrubInterval: "14d"
+
+---
+# Example 3: High durability 4+4 erasure coding
+apiVersion: storage.billyronks.io/v1
+kind: ErasureCodingPolicy
+metadata:
+  name: high-durability-ec
+spec:
+  # 4 data shards + 4 parity shards = 100% overhead
+  # Can tolerate 4 simultaneous shard failures
+  # Same overhead as 2x replication but more fault tolerant
+  dataShards: 4
+  parityShards: 4
+
+  # Standard stripe size
+  stripeSizeBytes: 1048576  # 1MB
+
+  # Reed-Solomon algorithm
+  algorithm: ReedSolomon
+
+  # Conservative journal settings
+  journalConfig:
+    journalSizeBytes: 10737418240  # 10GB
+    replicationFactor: 3
+    destageThresholdPercent: 70
+    destageInterval: "30s"
+
+  # Can serve reads with any 4 shards
+  minHealthyShards: 4
+
+  # Aggressive scrubbing for mission-critical data
+  scrubbingEnabled: true
+  scrubInterval: "3d"
+
+---
+# Example 4: Archival 10+2 erasure coding
+apiVersion: storage.billyronks.io/v1
+kind: ErasureCodingPolicy
+metadata:
+  name: archival-ec
+spec:
+  # 10 data shards + 2 parity shards = 20% overhead
+  # Very efficient for large-scale archival
+  # Requires at least 12 nodes
+  dataShards: 10
+  parityShards: 2
+
+  # Large stripe size for archival workloads
+  stripeSizeBytes: 4194304  # 4MB
+
+  # Reed-Solomon algorithm
+  algorithm: ReedSolomon
+
+  # Minimal journal (archival is write-once)
+  journalConfig:
+    journalSizeBytes: 5368709120  # 5GB
+    replicationFactor: 3
+    destageThresholdPercent: 90
+    destageInterval: "120s"
+
+  # Require all data shards for reads
+  minHealthyShards: 10
+
+  # Monthly scrubbing is sufficient for archival
+  scrubbingEnabled: true
+  scrubInterval: "30d"
+
+---
+# Example 5: Small cluster 3+1 erasure coding
+apiVersion: storage.billyronks.io/v1
+kind: ErasureCodingPolicy
+metadata:
+  name: small-cluster-ec
+spec:
+  # 3 data shards + 1 parity shard = 33% overhead
+  # Minimal configuration for small clusters (4 nodes)
+  # Can only tolerate 1 failure
+  dataShards: 3
+  parityShards: 1
+
+  # Smaller stripe size
+  stripeSizeBytes: 524288  # 512KB
+
+  # Reed-Solomon algorithm
+  algorithm: ReedSolomon
+
+  # Modest journal size
+  journalConfig:
+    journalSizeBytes: 5368709120  # 5GB
+    replicationFactor: 3
+    destageThresholdPercent: 80
+    destageInterval: "30s"
+
+  # Require all data shards
+  minHealthyShards: 3
+
+  # Weekly scrubbing
+  scrubbingEnabled: true
+  scrubInterval: "7d"

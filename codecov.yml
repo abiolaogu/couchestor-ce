@@ -1,0 +1,27 @@
+# Codecov configuration
+# https://docs.codecov.io/docs/codecovyml-reference
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...100"
+  status:
+    project:
+      default:
+        target: 60%
+        threshold: 5%
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+ignore:
+  - "src/main.rs"  # Entry point with minimal logic
+  - "**/*_test.rs"
+  - "**/tests/**"
+  - "**/proptest.rs"
+
+comment:
+  layout: "header, diff, flags, files"
+  behavior: default
+  require_changes: true

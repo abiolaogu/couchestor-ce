@@ -1,0 +1,124 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: erasurecodingpolicies.storage.billyronks.io
+spec:
+  group: storage.billyronks.io
+  names:
+    kind: ErasureCodingPolicy
+    plural: erasurecodingpolicies
+    singular: erasurecodingpolicy
+    shortNames:
+      - ecp
+  scope: Cluster
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              properties:
+                dataShards:
+                  type: integer
+                  default: 4
+                  description: Number of data shards
+                parityShards:
+                  type: integer
+                  default: 2
+                  description: Number of parity shards
+                stripeSizeBytes:
+                  type: integer
+                  default: 1048576
+                  description: Size of each stripe in bytes
+                algorithm:
+                  type: string
+                  default: "ReedSolomon"
+                  enum:
+                    - ReedSolomon
+                    - LRC
+                  description: Erasure coding algorithm
+                journalConfig:
+                  type: object
+                  description: Journal configuration for write buffering
+                  properties:
+                    journalSizeBytes:
+                      type: integer
+                      default: 10737418240
+                      description: Size of the journal in bytes
+                    replicationFactor:
+                      type: integer
+                      default: 3
+                      description: Replication factor for journal data
+                    destageThresholdPercent:
+                      type: integer
+                      default: 80
+                      description: Percentage of journal usage that triggers destaging
+                    destageInterval:
+                      type: string
+                      default: "30s"
+                      description: Interval for checking destage conditions
+                minHealthyShards:
+                  type: integer
+                  description: Minimum number of healthy shards required
+                scrubbingEnabled:
+                  type: boolean
+                  default: false
+                  description: Whether to enable background scrubbing
+                scrubInterval:
+                  type: string
+                  default: "7d"
+                  description: Interval for background scrubbing
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Ready
+                    - Invalid
+                    - Active
+                activeVolumes:
+                  type: integer
+                totalStripes:
+                  type: integer
+                healthyStripes:
+                  type: integer
+                degradedStripes:
+                  type: integer
+                rebuildingStripes:
+                  type: integer
+                storageEfficiency:
+                  type: number
+                lastValidationTime:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+      additionalPrinterColumns:
+        - name: Data Shards
+          type: integer
+          jsonPath: .spec.dataShards
+        - name: Parity Shards
+          type: integer
+          jsonPath: .spec.parityShards
+        - name: Stripe Size
+          type: string
+          jsonPath: .spec.stripeSizeBytes
+        - name: Algorithm
+          type: string
+          jsonPath: .spec.algorithm
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}

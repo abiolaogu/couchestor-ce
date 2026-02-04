@@ -1,0 +1,204 @@
+# Example 1: Basic hot/cold tiering without warm tier
+---
+apiVersion: storage.billyronks.io/v1
+kind: StoragePolicy
+metadata:
+  name: basic-tiering
+spec:
+  # IOPS thresholds
+  highWatermarkIOPS: 5000    # Move to hot tier above this
+  warmWatermarkIOPS: 0       # Disable warm tier
+  lowWatermarkIOPS: 500      # Move to cold tier below this
+
+  # Time windows
+  samplingWindow: "1h"       # Average IOPS over 1 hour
+  cooldownPeriod: "24h"      # Wait 24h between migrations
+
+  # Target StorageClass
+  storageClassName: "mayastor"
+
+  # Pool selectors
+  hotPoolSelector:
+    matchLabels:
+      storage-tier: hot
+      media-type: nvme
+
+  coldPoolSelector:
+    matchLabels:
+      storage-tier: cold
+      media-type: sata
+
+  # Migration settings
+  maxConcurrentMigrations: 2
+  migrationTimeout: "30m"
+
+  # Enable the policy
+  enabled: true
+  dryRun: false
+
+---
+# Example 2: Three-tier system (hot/warm/cold) with erasure coding
+apiVersion: storage.billyronks.io/v1
+kind: StoragePolicy
+metadata:
+  name: production-tiering
+spec:
+  # Three-tier IOPS thresholds
+  highWatermarkIOPS: 5000    # → Hot tier (NVMe)
+  warmWatermarkIOPS: 2000    # → Warm tier (SAS SSD)
+  lowWatermarkIOPS: 500      # → Cold tier (SATA with EC)
+
+  # Time windows
+  samplingWindow: "2h"       # Longer window for stability
+  cooldownPeriod: "48h"      # Conservative cooldown
+
+  # Target StorageClass
+  storageClassName: "mayastor"
+
+  # Pool selectors for three tiers
+  hotPoolSelector:
+    matchLabels:
+      storage-tier: hot
+      media-type: nvme
+
+  warmPoolSelector:
+    matchLabels:
+      storage-tier: warm
+      media-type: sas-ssd
+
+  coldPoolSelector:
+    matchLabels:
+      storage-tier: cold
+      media-type: sata
+
+  # Erasure coding for cold tier
+  ecPolicyRef: standard-ec
+  ecMinVolumeSizeBytes: 10737418240  # 10GB minimum for EC
+
+  # Migration settings
+  maxConcurrentMigrations: 3
+  migrationTimeout: "45m"
+
+  # Enable the policy
+  enabled: true
+  dryRun: false
+
+---
+# Example 3: Dry-run policy for testing
+apiVersion: storage.billyronks.io/v1
+kind: StoragePolicy
+metadata:
+  name: test-policy
+spec:
+  # Conservative thresholds for testing
+  highWatermarkIOPS: 10000
+  warmWatermarkIOPS: 0
+  lowWatermarkIOPS: 1000
+
+  # Short sampling window for testing
+  samplingWindow: "15m"
+  cooldownPeriod: "1h"
+
+  # Target StorageClass
+  storageClassName: "mayastor"
+
+  # Pool selectors
+  hotPoolSelector:
+    matchLabels:
+      storage-tier: hot
+
+  coldPoolSelector:
+    matchLabels:
+      storage-tier: cold
+
+  # Migration settings
+  maxConcurrentMigrations: 1
+  migrationTimeout: "15m"
+
+  # Dry-run mode - only log decisions
+  enabled: true
+  dryRun: true
+
+---
+# Example 4: Policy with volume selector (filter by labels)
+apiVersion: storage.billyronks.io/v1
+kind: StoragePolicy
+metadata:
+  name: database-tiering
+spec:
+  # IOPS thresholds
+  highWatermarkIOPS: 8000    # Databases need higher threshold
+  warmWatermarkIOPS: 0
+  lowWatermarkIOPS: 1000
+
+  # Time windows
+  samplingWindow: "30m"
+  cooldownPeriod: "12h"
+
+  # Target StorageClass
+  storageClassName: "mayastor"
+
+  # Only manage database volumes
+  volumeSelector:
+    matchLabels:
+      app: database
+      tier: production
+
+  # Pool selectors
+  hotPoolSelector:
+    matchLabels:
+      storage-tier: hot
+      performance: high
+
+  coldPoolSelector:
+    matchLabels:
+      storage-tier: cold
+      capacity: large
+
+  # Migration settings
+  maxConcurrentMigrations: 2
+  migrationTimeout: "60m"  # Longer timeout for large DBs
+
+  # Enable the policy
+  enabled: true
+  dryRun: false
+
+---
+# Example 5: Aggressive tiering for cost optimization
+apiVersion: storage.billyronks.io/v1
+kind: StoragePolicy
+metadata:
+  name: cost-optimized
+spec:
+  # Lower thresholds to move more to cold tier
+  highWatermarkIOPS: 3000
+  warmWatermarkIOPS: 0
+  lowWatermarkIOPS: 200      # Very low threshold
+
+  # Faster response
+  samplingWindow: "30m"
+  cooldownPeriod: "6h"       # Shorter cooldown
+
+  # Target StorageClass
+  storageClassName: "mayastor"
+
+  # Pool selectors
+  hotPoolSelector:
+    matchLabels:
+      storage-tier: hot
+
+  coldPoolSelector:
+    matchLabels:
+      storage-tier: cold
+
+  # Erasure coding for maximum cost savings
+  ecPolicyRef: high-efficiency-ec
+  ecMinVolumeSizeBytes: 5368709120  # 5GB minimum
+
+  # Migration settings
+  maxConcurrentMigrations: 4  # More aggressive
+  migrationTimeout: "30m"
+
+  # Enable the policy
+  enabled: true
+  dryRun: false

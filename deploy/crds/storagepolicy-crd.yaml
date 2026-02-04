@@ -1,0 +1,291 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: storagepolicies.storage.billyronks.io
+spec:
+  group: storage.billyronks.io
+  names:
+    kind: StoragePolicy
+    plural: storagepolicies
+    singular: storagepolicy
+    shortNames:
+      - sp
+      - spolicy
+  scope: Cluster
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              properties:
+                highWatermarkIOPS:
+                  type: integer
+                  default: 5000
+                  description: IOPS threshold above which volumes are moved to hot tier
+                warmWatermarkIOPS:
+                  type: integer
+                  default: 2000
+                  description: IOPS threshold for warm tier
+                lowWatermarkIOPS:
+                  type: integer
+                  default: 500
+                  description: IOPS threshold below which volumes are moved to cold tier
+                samplingWindow:
+                  type: string
+                  default: "1h"
+                  description: Duration over which to calculate average IOPS
+                cooldownPeriod:
+                  type: string
+                  default: "24h"
+                  description: Minimum time between migrations of the same volume
+                storageClassName:
+                  type: string
+                  default: "mayastor"
+                  description: StorageClass name for Mayastor volumes to manage
+                hotPoolSelector:
+                  type: object
+                  description: Label selector for hot tier DiskPools
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - key
+                          - operator
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                            enum:
+                              - In
+                              - NotIn
+                              - Exists
+                              - DoesNotExist
+                          values:
+                            type: array
+                            items:
+                              type: string
+                warmPoolSelector:
+                  type: object
+                  description: Label selector for warm tier DiskPools
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - key
+                          - operator
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                            enum:
+                              - In
+                              - NotIn
+                              - Exists
+                              - DoesNotExist
+                          values:
+                            type: array
+                            items:
+                              type: string
+                coldPoolSelector:
+                  type: object
+                  description: Label selector for cold tier DiskPools
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - key
+                          - operator
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                            enum:
+                              - In
+                              - NotIn
+                              - Exists
+                              - DoesNotExist
+                          values:
+                            type: array
+                            items:
+                              type: string
+                volumeSelector:
+                  type: object
+                  description: Label selector to filter which PVs this policy manages
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - key
+                          - operator
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                            enum:
+                              - In
+                              - NotIn
+                              - Exists
+                              - DoesNotExist
+                          values:
+                            type: array
+                            items:
+                              type: string
+                maxConcurrentMigrations:
+                  type: integer
+                  default: 2
+                  description: Maximum number of migrations to run in parallel
+                migrationTimeout:
+                  type: string
+                  default: "30m"
+                  description: Maximum duration for a single migration operation
+                enabled:
+                  type: boolean
+                  default: true
+                  description: Master switch to enable/disable this policy
+                dryRun:
+                  type: boolean
+                  default: false
+                  description: Log migration decisions without executing them
+                ecPolicyRef:
+                  type: string
+                  description: Reference to an ErasureCodingPolicy for cold tier storage
+                ecMinVolumeSizeBytes:
+                  type: integer
+                  default: 10737418240
+                  description: Minimum volume size for EC storage
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Active
+                    - Disabled
+                    - Error
+                watchedVolumes:
+                  type: integer
+                hotVolumes:
+                  type: integer
+                warmVolumes:
+                  type: integer
+                coldVolumes:
+                  type: integer
+                activeMigrations:
+                  type: integer
+                totalMigrations:
+                  type: integer
+                failedMigrations:
+                  type: integer
+                lastReconcileTime:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - status
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                migrationHistory:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - volumeName
+                      - timestamp
+                      - fromTier
+                      - toTier
+                      - triggerIOPS
+                      - duration
+                      - success
+                    properties:
+                      volumeName:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      fromTier:
+                        type: string
+                      toTier:
+                        type: string
+                      triggerIOPS:
+                        type: number
+                      duration:
+                        type: string
+                      success:
+                        type: boolean
+                      error:
+                        type: string
+      additionalPrinterColumns:
+        - name: High IOPS
+          type: integer
+          jsonPath: .spec.highWatermarkIOPS
+        - name: Low IOPS
+          type: integer
+          jsonPath: .spec.lowWatermarkIOPS
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Watched
+          type: integer
+          jsonPath: .status.watchedVolumes
+        - name: Migrations
+          type: integer
+          jsonPath: .status.totalMigrations
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}
