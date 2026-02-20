@@ -4,7 +4,7 @@
 
 - `@refinedev/core`
 - `@refinedev/antd`
-- `@refinedev/react-query`
+- `@tanstack/react-query`
 - `antd` 5.x
 
 ## Commands

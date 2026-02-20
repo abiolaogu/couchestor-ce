@@ -13,9 +13,9 @@ export const dataProvider: DataProvider = {
     (inMemory as any)[resource] = [...((inMemory as any)[resource] ?? []), item];
     return { data: item as any };
   },
-  update: async ({ resource, id, variables }) => ({ data: { id, ...(variables as object) } as any }),
+  update: async ({ resource: _resource, id, variables }) => ({ data: { id, ...(variables as object) } as any }),
   getOne: async ({ resource, id }) => ({ data: (((inMemory as any)[resource] ?? []).find((i: any) => i.id === id) ?? { id }) as any }),
   deleteOne: async ({ id }) => ({ data: { id } as any }),
   getApiUrl: () => "",
-  custom: async () => ({ data: {} }),
+  custom: async () => ({ data: {} as any }),
 };
