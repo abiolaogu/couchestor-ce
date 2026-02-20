@@ -40,3 +40,7 @@ tarpaulin-report.html
 *.tmp
 *.temp
 .cache/
+web/dist/
+*.tsbuildinfo
+.dart_tool/
+**/.dart_tool/
